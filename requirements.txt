@@ -3,5 +3,4 @@ uvicorn
 python-multipart
 pytesseract
 Pillow
-pandas
 pytest

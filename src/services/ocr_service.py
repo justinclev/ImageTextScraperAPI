@@ -1,7 +1,6 @@
 import pytesseract
 from PIL import Image
 import io
-import pandas as pd # Optional, but common in senior data engineering
 
 class OCRService:
     @staticmethod
