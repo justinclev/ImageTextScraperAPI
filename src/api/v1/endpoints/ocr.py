@@ -7,6 +7,8 @@ from src.core.exceptions import (
     InvalidImageError,
     OCRProcessingError,
 )
+from src.core.metrics import record_ocr_outcome
+from src.core.rate_limiter import check_ocr_rate_limit
 from src.schemas.ocr import OCRResponse, OCRToken
 from src.services.ocr_service import OCRService
 
@@ -31,7 +33,27 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
     Raises:
         HTTPException: For validation or processing errors
     """
+    client_key = request.client.host if request.client else "unknown"
+    is_allowed, retry_after_seconds = check_ocr_rate_limit(client_key)
+    if not is_allowed:
+        record_ocr_outcome("rate_limited")
+        logger.warning(
+            "rate_limited",
+            extra={
+                "event": "rate_limited",
+                "client_key": client_key,
+                "retry_after_seconds": retry_after_seconds,
+                "path": request.url.path,
+            },
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please retry later.",
+            headers={"Retry-After": str(retry_after_seconds)},
+        )
+
     if file.content_type not in ALLOWED_CONTENT_TYPES:
+        record_ocr_outcome("invalid_content_type")
         logger.warning(
             "invalid_content_type",
             extra={
@@ -47,6 +69,7 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
         )
     
     if not file.filename:
+        record_ocr_outcome("missing_filename")
         logger.warning(
             "missing_filename",
             extra={
@@ -63,6 +86,7 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
         file_bytes = await file.read()
         
         if len(file_bytes) > MAX_FILE_SIZE:
+            record_ocr_outcome("file_too_large")
             logger.warning(
                 "file_too_large",
                 extra={
@@ -79,6 +103,7 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
             )
         
         if not file_bytes:
+            record_ocr_outcome("empty_file")
             logger.warning(
                 "empty_file",
                 extra={
@@ -98,6 +123,7 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
         try:
             tokens, full_text = OCRService.extract_tokens(file_bytes)
         except InvalidImageError as e:
+            record_ocr_outcome("invalid_image")
             logger.error(
                 "invalid_image",
                 extra={
@@ -112,6 +138,7 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
                 detail=str(e)
             )
         except OCRProcessingError as e:
+            record_ocr_outcome("ocr_error")
             logger.error(
                 "ocr_processing_error",
                 extra={
@@ -142,11 +169,13 @@ async def run_ocr(request: Request, file: UploadFile = File(...)):
                 "path": request.url.path,
             },
         )
+        record_ocr_outcome("success")
         return response
         
     except HTTPException:
         raise
     except Exception as e:
+        record_ocr_outcome("unexpected_error")
         logger.exception(
             "unexpected_ocr_error",
             extra={

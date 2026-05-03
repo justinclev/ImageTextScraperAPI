@@ -3,8 +3,10 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 
 from src.api.v1.api import api_router
+from src.core.metrics import record_http_request, render_prometheus_metrics
 from src.core.observability import configure_logging
 from src.core.request_context import reset_request_id, set_request_id
 
@@ -38,7 +40,14 @@ async def request_context_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
-        duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+        duration_seconds = time.perf_counter() - started_at
+        duration_ms = round(duration_seconds * 1000, 2)
+        record_http_request(
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_seconds,
+        )
         logger.info(
             "request_completed",
             extra={
@@ -51,7 +60,9 @@ async def request_context_middleware(request: Request, call_next):
         )
         return response
     except Exception:
-        duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+        duration_seconds = time.perf_counter() - started_at
+        duration_ms = round(duration_seconds * 1000, 2)
+        record_http_request(request.method, request.url.path, 500, duration_seconds)
         logger.exception(
             "request_failed",
             extra={
@@ -68,3 +79,11 @@ async def request_context_middleware(request: Request, call_next):
 @app.get("/health", tags=["health"])
 def health_check():
     return {"status": "healthy", "message": "API is up and running!", "version": app.version}
+
+
+@app.get("/metrics", tags=["observability"])
+def metrics() -> PlainTextResponse:
+    return PlainTextResponse(
+        content=render_prometheus_metrics(),
+        media_type="text/plain; version=0.0.4",
+    )

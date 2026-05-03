@@ -14,6 +14,7 @@ class OCRService:
     """Service for performing OCR operations on images."""
     
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    OCR_TIMEOUT_SECONDS = 8
     
     @staticmethod
     def extract_tokens(file_bytes: bytes) -> Tuple[List[Dict[str, Any]], str]:
@@ -69,13 +70,27 @@ class OCRService:
             raise InvalidImageError("Failed to process the uploaded image")
         
         try:
-            data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+            data = pytesseract.image_to_data(
+                image,
+                output_type=pytesseract.Output.DICT,
+                timeout=OCRService.OCR_TIMEOUT_SECONDS,
+            )
         except pytesseract.TesseractNotFoundError:
             logger.error(
                 "tesseract_not_found",
                 extra={"event": "tesseract_not_found"},
             )
             raise OCRProcessingError("OCR engine is not properly configured on the server")
+        except RuntimeError as e:
+            logger.error(
+                "ocr_timeout",
+                extra={
+                    "event": "ocr_timeout",
+                    "error": str(e),
+                    "timeout_seconds": OCRService.OCR_TIMEOUT_SECONDS,
+                },
+            )
+            raise OCRProcessingError("OCR processing timed out")
         except Exception as e:
             logger.error(
                 "ocr_extraction_failed",

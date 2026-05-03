@@ -109,3 +109,52 @@ def test_extract_echoes_supplied_request_id(monkeypatch):
 
     assert response.status_code == 200
     assert response.headers["x-request-id"] == "req-test-123"
+
+
+def test_extract_rate_limited_maps_to_429(monkeypatch):
+    monkeypatch.setattr(ocr_endpoint, "check_ocr_rate_limit", lambda _: (False, 7))
+
+    response = client.post(
+        "/api/v1/ocr/extract",
+        files={"file": ("test.png", b"fake-image-bytes", "image/png")},
+    )
+
+    assert response.status_code == 429
+    assert response.json()["detail"] == "Rate limit exceeded. Please retry later."
+    assert response.headers["retry-after"] == "7"
+
+
+def test_extract_timeout_error_maps_to_500(monkeypatch):
+    def fake_extract_tokens(_: bytes):
+        raise OCRProcessingError("OCR processing timed out")
+
+    monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
+
+    response = client.post(
+        "/api/v1/ocr/extract",
+        files={"file": ("slow.png", b"fake-image-bytes", "image/png")},
+    )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "OCR processing timed out"
+
+
+def test_metrics_endpoint_exposes_prometheus_counters(monkeypatch):
+    def fake_extract_tokens(_: bytes):
+        return (
+            [{"text": "hello", "confidence": 98.5, "x": 1, "y": 2, "width": 3, "height": 4}],
+            "hello",
+        )
+
+    monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
+
+    _ = client.post(
+        "/api/v1/ocr/extract",
+        files={"file": ("sample.png", b"fake-image-bytes", "image/png")},
+    )
+
+    metrics_response = client.get("/metrics")
+
+    assert metrics_response.status_code == 200
+    assert "http_requests_total" in metrics_response.text
+    assert "ocr_requests_total" in metrics_response.text
