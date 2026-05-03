@@ -1,13 +1,14 @@
 import logging
 from typing import List
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
-from src.services.ocr_service import OCRService
-from src.schemas.ocr import OCRResponse, OCRToken
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
+
 from src.core.exceptions import (
     InvalidImageError,
     OCRProcessingError,
 )
+from src.schemas.ocr import OCRResponse, OCRToken
+from src.services.ocr_service import OCRService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

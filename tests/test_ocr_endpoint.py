@@ -1,15 +1,18 @@
 from fastapi.testclient import TestClient
 
-from src.main import app
 from src.api.v1.endpoints import ocr as ocr_endpoint
 from src.core.exceptions import InvalidImageError, OCRProcessingError
+from src.main import app
 
 client = TestClient(app)
 
 
 def test_extract_success(monkeypatch):
     def fake_extract_tokens(_: bytes):
-        return ([{"text": "hello", "confidence": 98.5, "x": 1, "y": 2, "width": 3, "height": 4}], "hello")
+        return (
+            [{"text": "hello", "confidence": 98.5, "x": 1, "y": 2, "width": 3, "height": 4}],
+            "hello",
+        )
 
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 

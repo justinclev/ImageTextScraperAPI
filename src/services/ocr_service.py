@@ -1,8 +1,9 @@
-import pytesseract
-from PIL import Image
 import io
 import logging
-from typing import Tuple, List, Dict, Any
+from typing import Any, Dict, List, Tuple
+
+import pytesseract
+from PIL import Image
 
 from src.core.exceptions import InvalidImageError, OCRProcessingError
 
@@ -32,7 +33,10 @@ class OCRService:
         """
         if len(file_bytes) > OCRService.MAX_FILE_SIZE:
             logger.error(f"File size {len(file_bytes)} exceeds max {OCRService.MAX_FILE_SIZE}")
-            raise OCRProcessingError(f"File size exceeds maximum limit of {OCRService.MAX_FILE_SIZE / 1024 / 1024:.1f}MB")
+            raise OCRProcessingError(
+                "File size exceeds maximum limit of "
+                f"{OCRService.MAX_FILE_SIZE / 1024 / 1024:.1f}MB"
+            )
         
         try:
             image = Image.open(io.BytesIO(file_bytes))
@@ -47,7 +51,7 @@ class OCRService:
         
         try:
             data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
-        except pytesseract.TesseractNotFoundError as e:
+        except pytesseract.TesseractNotFoundError:
             logger.error("Tesseract OCR engine not found")
             raise OCRProcessingError("OCR engine is not properly configured on the server")
         except Exception as e:

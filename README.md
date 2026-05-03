@@ -78,6 +78,22 @@ docker-compose up --build
 pytest -q
 ```
 
+## CI Quality Gates
+
+This repository runs the following checks in GitHub Actions:
+
+- `lint` (`ruff check .`)
+- `typecheck` (`mypy src`)
+- `test` (`pytest -q`)
+- `quality-gate` (depends on all checks above)
+
+To enforce as required checks on GitHub:
+
+1. Go to repository **Settings** → **Branches**.
+2. Add or edit a protection rule for `main`.
+3. Enable **Require status checks to pass before merging**.
+4. Select `quality-gate` (or all of `lint`, `typecheck`, `test`) as required.
+
 ## Design Notes
 
 - Endpoint layer validates request shape and maps domain errors to HTTP responses.

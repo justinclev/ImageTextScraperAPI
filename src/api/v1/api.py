@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from src.api.v1.endpoints import ocr
 
 api_router = APIRouter()
