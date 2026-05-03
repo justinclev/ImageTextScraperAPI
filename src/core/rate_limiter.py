@@ -3,6 +3,8 @@ from collections import defaultdict, deque
 from threading import Lock
 from typing import DefaultDict, Deque, Tuple
 
+from src.core.settings import settings
+
 
 class InMemoryRateLimiter:
     def __init__(self, max_requests: int, window_seconds: int) -> None:
@@ -32,7 +34,10 @@ class InMemoryRateLimiter:
             self._events.clear()
 
 
-ocr_rate_limiter = InMemoryRateLimiter(max_requests=20, window_seconds=60)
+ocr_rate_limiter = InMemoryRateLimiter(
+    max_requests=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+)
 
 
 def check_ocr_rate_limit(client_key: str) -> Tuple[bool, int]:

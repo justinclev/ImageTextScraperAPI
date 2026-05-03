@@ -19,7 +19,7 @@ A FastAPI-based OCR service that extracts word-level tokens (with confidence and
 
 ### OCR Extraction
 
-- `POST /api/v1/ocr/extract`
+- `POST /api/v1/ocrs/extract`
 - `multipart/form-data` with `file`
 - Accepted content types: `image/jpeg`, `image/png`, `image/tiff`, `image/webp`
 - Max file size: 10MB
@@ -96,6 +96,7 @@ Current test coverage includes:
 
 This repository runs the following checks in GitHub Actions:
 
+- `security` (`bandit -r src` + `pip-audit`)
 - `lint` (`ruff check .`)
 - `typecheck` (`mypy src`)
 - `test` (`pytest -q`)
@@ -132,20 +133,24 @@ Client
 ## Tradeoffs / ADR Summary
 
 1. **In-memory rate limiter over Redis**
-	- Chosen for MVP simplicity and zero external dependency.
-	- Tradeoff: limits are per-process (not shared across multiple replicas).
+   - Chosen for MVP simplicity and zero external dependency.
+   - Tradeoff: limits are per-process (not shared across multiple replicas).
 
 2. **In-memory metrics over dedicated telemetry stack**
-	- Chosen for low setup overhead and easy local/CI verification.
-	- Tradeoff: counters reset on restart and are not durable.
+   - Chosen for low setup overhead and easy local/CI verification.
+   - Tradeoff: counters reset on restart and are not durable.
 
 3. **Synchronous OCR in request path over queued async worker**
-	- Chosen for straightforward API semantics and easier local development.
-	- Tradeoff: request latency directly includes OCR runtime.
+   - Chosen for straightforward API semantics and easier local development.
+   - Tradeoff: request latency directly includes OCR runtime.
 
 4. **Hard timeout for OCR extraction (8s)**
-	- Chosen to protect API responsiveness under complex images.
-	- Tradeoff: long-running OCR jobs are rejected instead of eventually completing.
+   - Chosen to protect API responsiveness under complex images.
+   - Tradeoff: long-running OCR jobs are rejected instead of eventually completing.
+
+5. **Environment-driven settings over hardcoded constants**
+   - Chosen to keep deployment tuning (`MAX_FILE_SIZE_BYTES`, `OCR_TIMEOUT_SECONDS`, rate limit) consistent across environments.
+   - Tradeoff: adds configuration surface that must be managed per environment.
 
 ## Observability
 
@@ -155,9 +160,9 @@ Client
 - Logs are emitted as structured JSON (timestamp, level, logger, message, request_id, event fields).
 - Request lifecycle events are logged (`request_started`, `request_completed`, `request_failed`) with method/path/status/duration.
 - A Prometheus-style `/metrics` endpoint exports:
-	- `http_requests_total`
-	- `http_request_duration_seconds_sum`
-	- `ocr_requests_total` by outcome (`success`, `rate_limited`, `ocr_error`, etc.)
+  - `http_requests_total`
+  - `http_request_duration_seconds_sum`
+  - `ocr_requests_total` by outcome (`success`, `rate_limited`, `ocr_error`, etc.)
 
 ### Prometheus + Grafana Quick Start
 
@@ -192,15 +197,21 @@ Grafana setup:
 
 1. Add data source: Prometheus URL `http://host.docker.internal:9090`.
 2. Create panels for:
-	 - Request rate: `sum(rate(http_requests_total[1m]))`
-	 - OCR success rate: `sum(rate(ocr_requests_total{outcome="success"}[5m]))`
-	 - Error rate: `sum(rate(ocr_requests_total{outcome!="success"}[5m]))`
+   - Request rate: `sum(rate(http_requests_total[1m]))`
+   - OCR success rate: `sum(rate(ocr_requests_total{outcome="success"}[5m]))`
+   - Error rate: `sum(rate(ocr_requests_total{outcome!="success"}[5m]))`
 
 ## Resilience Controls
 
 - **Rate limit:** 20 OCR requests/minute per client IP (`429` + `Retry-After`).
 - **OCR timeout:** 8-second cap on tesseract extraction to prevent pathological request hangs.
 - **Validation guards:** content type allowlist, non-empty file, and max upload size enforcement.
+
+## Team Practices
+
+- `CODEOWNERS` is configured in `.github/CODEOWNERS` for clear review ownership.
+- Pull request checklist is enforced via `.github/pull_request_template.md`.
+- Runtime behavior is centralized through environment-driven settings in `src/core/settings.py`.
 
 ## Performance Baseline
 

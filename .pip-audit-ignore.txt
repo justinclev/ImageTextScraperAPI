@@ -1,0 +1,4 @@
+# Temporary exceptions for transitive vulnerabilities pending framework upgrade.
+# Remove these as soon as FastAPI/Starlette constraints allow patched versions.
+CVE-2025-54121
+CVE-2025-62727

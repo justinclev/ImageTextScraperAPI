@@ -6,6 +6,7 @@ import pytesseract
 from PIL import Image
 
 from src.core.exceptions import InvalidImageError, OCRProcessingError
+from src.core.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 class OCRService:
     """Service for performing OCR operations on images."""
     
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    OCR_TIMEOUT_SECONDS = 8
+    MAX_FILE_SIZE = settings.max_file_size_bytes
+    OCR_TIMEOUT_SECONDS = settings.ocr_timeout_seconds
     
     @staticmethod
     def extract_tokens(file_bytes: bytes) -> Tuple[List[Dict[str, Any]], str]:

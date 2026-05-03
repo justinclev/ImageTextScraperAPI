@@ -9,14 +9,15 @@ from src.core.exceptions import (
 )
 from src.core.metrics import record_ocr_outcome
 from src.core.rate_limiter import check_ocr_rate_limit
+from src.core.settings import settings
 from src.schemas.ocr import OCRResponse, OCRToken
 from src.services.ocr_service import OCRService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/tiff", "image/webp"}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_CONTENT_TYPES = settings.allowed_content_types
+MAX_FILE_SIZE = settings.max_file_size_bytes
 
 
 @router.post("/extract", response_model=OCRResponse)
