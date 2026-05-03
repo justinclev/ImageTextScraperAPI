@@ -150,6 +150,7 @@ Client
 
 5. **Environment-driven settings over hardcoded constants**
    - Chosen to keep deployment tuning (`MAX_FILE_SIZE_BYTES`, `OCR_TIMEOUT_SECONDS`, rate limit) consistent across environments.
+   - Implemented with `pydantic-settings` for typed environment parsing and validation.
    - Tradeoff: adds configuration surface that must be managed per environment.
 
 ## Observability
@@ -211,7 +212,7 @@ Grafana setup:
 
 - `CODEOWNERS` is configured in `.github/CODEOWNERS` for clear review ownership.
 - Pull request checklist is enforced via `.github/pull_request_template.md`.
-- Runtime behavior is centralized through environment-driven settings in `src/core/settings.py`.
+- Runtime behavior is centralized through `pydantic-settings`-backed configuration in `src/core/settings.py`.
 
 ## Performance Baseline
 
