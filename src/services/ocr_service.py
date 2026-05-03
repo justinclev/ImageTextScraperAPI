@@ -32,7 +32,14 @@ class OCRService:
             OCRProcessingError: If OCR processing fails
         """
         if len(file_bytes) > OCRService.MAX_FILE_SIZE:
-            logger.error(f"File size {len(file_bytes)} exceeds max {OCRService.MAX_FILE_SIZE}")
+            logger.error(
+                "service_file_too_large",
+                extra={
+                    "event": "service_file_too_large",
+                    "file_size": len(file_bytes),
+                    "max_file_size": OCRService.MAX_FILE_SIZE,
+                },
+            )
             raise OCRProcessingError(
                 "File size exceeds maximum limit of "
                 f"{OCRService.MAX_FILE_SIZE / 1024 / 1024:.1f}MB"
@@ -43,19 +50,40 @@ class OCRService:
             image.verify()  # Verify it's a valid image
             image = Image.open(io.BytesIO(file_bytes))  # Reopen after verify
         except IOError as e:
-            logger.error(f"Failed to open image: {str(e)}")
+            logger.error(
+                "invalid_image_payload",
+                extra={
+                    "event": "invalid_image_payload",
+                    "error": str(e),
+                },
+            )
             raise InvalidImageError("The uploaded file is not a valid image or is corrupted")
         except Exception as e:
-            logger.error(f"Unexpected error opening image: {str(e)}")
+            logger.error(
+                "unexpected_image_open_error",
+                extra={
+                    "event": "unexpected_image_open_error",
+                    "error": str(e),
+                },
+            )
             raise InvalidImageError("Failed to process the uploaded image")
         
         try:
             data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
         except pytesseract.TesseractNotFoundError:
-            logger.error("Tesseract OCR engine not found")
+            logger.error(
+                "tesseract_not_found",
+                extra={"event": "tesseract_not_found"},
+            )
             raise OCRProcessingError("OCR engine is not properly configured on the server")
         except Exception as e:
-            logger.error(f"OCR processing failed: {str(e)}")
+            logger.error(
+                "ocr_extraction_failed",
+                extra={
+                    "event": "ocr_extraction_failed",
+                    "error": str(e),
+                },
+            )
             raise OCRProcessingError("Failed to extract text from image")
         
         tokens = []
@@ -80,8 +108,21 @@ class OCRService:
                         tokens.append(token)
                         full_text_list.append(word)
         except (KeyError, ValueError, TypeError) as e:
-            logger.error(f"Error parsing OCR data: {str(e)}")
+            logger.error(
+                "ocr_result_parse_failed",
+                extra={
+                    "event": "ocr_result_parse_failed",
+                    "error": str(e),
+                },
+            )
             raise OCRProcessingError("Failed to parse OCR results")
         
-        logger.info(f"Successfully extracted {len(tokens)} tokens from image")
+        logger.info(
+            "ocr_tokens_extracted",
+            extra={
+                "event": "ocr_tokens_extracted",
+                "token_count": len(tokens),
+                "text_length": len(" ".join(full_text_list)),
+            },
+        )
         return tokens, " ".join(full_text_list)

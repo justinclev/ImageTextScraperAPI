@@ -78,6 +78,12 @@ docker-compose up --build
 pytest -q
 ```
 
+Current test coverage includes:
+
+- Unit tests for endpoint validation and error mapping
+- Integration tests with a real PNG fixture at `tests/fixtures/sample_hello.png`
+- Request-ID propagation checks (`X-Request-ID` in responses)
+
 ## CI Quality Gates
 
 This repository runs the following checks in GitHub Actions:
@@ -99,3 +105,24 @@ To enforce as required checks on GitHub:
 - Endpoint layer validates request shape and maps domain errors to HTTP responses.
 - Service layer encapsulates OCR/image parsing logic.
 - OCR result includes token-level geometry for downstream indexing/highlighting.
+
+## Observability
+
+- Request-scoped correlation IDs are supported through `X-Request-ID`.
+	- If provided by the client, the same ID is echoed in the response.
+	- If absent, the API generates a UUID and returns it in `X-Request-ID`.
+- Logs are emitted as structured JSON (timestamp, level, logger, message, request_id, event fields).
+- Request lifecycle events are logged (`request_started`, `request_completed`, `request_failed`) with method/path/status/duration.
+
+## Performance Baseline
+
+Local baseline (macOS, Python 3.11, Tesseract via Homebrew), measured against
+`tests/fixtures/sample_hello.png` with 5 warmup runs + 30 measured runs:
+
+- Average latency: ~151.94 ms/request
+- P50 latency: ~149.22 ms
+- P95 latency: ~164.82 ms
+- Single-worker throughput: ~6.58 requests/second
+
+These numbers are intended as a practical baseline and will vary by hardware,
+image complexity, and deployment profile.

@@ -27,6 +27,7 @@ def test_extract_success(monkeypatch):
     assert body["total_tokens"] == 1
     assert body["full_text"] == "hello"
     assert body["tokens"][0]["text"] == "hello"
+    assert "x-request-id" in response.headers
 
 
 def test_extract_rejects_invalid_content_type():
@@ -89,3 +90,22 @@ def test_extract_processing_error_maps_to_500(monkeypatch):
 
     assert response.status_code == 500
     assert response.json()["detail"] == "OCR engine failure"
+
+
+def test_extract_echoes_supplied_request_id(monkeypatch):
+    def fake_extract_tokens(_: bytes):
+        return (
+            [{"text": "hello", "confidence": 98.5, "x": 1, "y": 2, "width": 3, "height": 4}],
+            "hello",
+        )
+
+    monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
+
+    response = client.post(
+        "/api/v1/ocr/extract",
+        files={"file": ("test.png", b"fake-image-bytes", "image/png")},
+        headers={"X-Request-ID": "req-test-123"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["x-request-id"] == "req-test-123"
