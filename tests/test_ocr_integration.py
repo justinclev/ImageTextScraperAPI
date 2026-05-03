@@ -15,7 +15,7 @@ def test_extract_real_sample_image_returns_tokens():
     image_path = FIXTURES_DIR / "sample_hello.png"
     with image_path.open("rb") as file_handle:
         response = client.post(
-            "/api/v1/ocr/extract",
+            "/api/v1/ocr/extractTokens",
             files={"file": ("sample_hello.png", file_handle, "image/png")},
         )
 
@@ -32,7 +32,7 @@ def test_extract_real_sample_image_contains_expected_text_fragment():
     image_path = FIXTURES_DIR / "sample_hello.png"
     with image_path.open("rb") as file_handle:
         response = client.post(
-            "/api/v1/ocr/extract",
+            "/api/v1/ocr/extractTokens",
             files={"file": ("sample_hello.png", file_handle, "image/png")},
         )
 

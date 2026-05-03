@@ -20,7 +20,7 @@ ALLOWED_CONTENT_TYPES = settings.allowed_content_types
 MAX_FILE_SIZE = settings.max_file_size_bytes
 
 
-@router.post("/extract", response_model=OCRResponse)
+@router.post("/extractTokens", response_model=OCRResponse)
 async def run_ocr(request: Request, file: UploadFile = File(...)):
     """
     Extract text from an uploaded image using OCR.

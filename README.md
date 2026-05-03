@@ -19,7 +19,7 @@ A FastAPI-based OCR service that extracts word-level tokens (with confidence and
 
 ### OCR Extraction
 
-- `POST /api/v1/ocrs/extract`
+- `POST /api/v1/ocrs/extractTokens`
 - `multipart/form-data` with `file`
 - Accepted content types: `image/jpeg`, `image/png`, `image/tiff`, `image/webp`
 - Max file size: 10MB
@@ -33,7 +33,7 @@ A FastAPI-based OCR service that extracts word-level tokens (with confidence and
 Example request:
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ocr/extract" \
+curl -X POST "http://localhost:8000/api/v1/ocr/extractTokensTokens" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@sample.png;type=image/png"
@@ -120,7 +120,7 @@ To enforce as required checks on GitHub:
 ```text
 Client
   │
-  ├── POST /api/v1/ocr/extract
+  ├── POST /api/v1/ocr/extractTokens
   │      ├── Request middleware (request_id + request metrics)
   │      ├── Endpoint validation + rate-limit guard
   │      ├── OCR service (image verify + tesseract + timeout)

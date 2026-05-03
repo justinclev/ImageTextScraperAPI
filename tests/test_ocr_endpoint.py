@@ -17,7 +17,7 @@ def test_extract_success(monkeypatch):
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("test.png", b"fake-image-bytes", "image/png")},
     )
 
@@ -32,7 +32,7 @@ def test_extract_success(monkeypatch):
 
 def test_extract_rejects_invalid_content_type():
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("test.txt", b"not-image", "text/plain")},
     )
 
@@ -42,7 +42,7 @@ def test_extract_rejects_invalid_content_type():
 
 def test_extract_rejects_empty_file():
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("empty.png", b"", "image/png")},
     )
 
@@ -54,7 +54,7 @@ def test_extract_rejects_oversized_file():
     payload = b"a" * (ocr_endpoint.MAX_FILE_SIZE + 1)
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("big.png", payload, "image/png")},
     )
 
@@ -69,7 +69,7 @@ def test_extract_invalid_image_error_maps_to_400(monkeypatch):
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("bad.png", b"fake-image-bytes", "image/png")},
     )
 
@@ -84,7 +84,7 @@ def test_extract_processing_error_maps_to_500(monkeypatch):
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("bad.png", b"fake-image-bytes", "image/png")},
     )
 
@@ -102,7 +102,7 @@ def test_extract_echoes_supplied_request_id(monkeypatch):
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("test.png", b"fake-image-bytes", "image/png")},
         headers={"X-Request-ID": "req-test-123"},
     )
@@ -115,7 +115,7 @@ def test_extract_rate_limited_maps_to_429(monkeypatch):
     monkeypatch.setattr(ocr_endpoint, "check_ocr_rate_limit", lambda _: (False, 7))
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("test.png", b"fake-image-bytes", "image/png")},
     )
 
@@ -131,7 +131,7 @@ def test_extract_timeout_error_maps_to_500(monkeypatch):
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 
     response = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("slow.png", b"fake-image-bytes", "image/png")},
     )
 
@@ -149,7 +149,7 @@ def test_metrics_endpoint_exposes_prometheus_counters(monkeypatch):
     monkeypatch.setattr(ocr_endpoint.OCRService, "extract_tokens", fake_extract_tokens)
 
     _ = client.post(
-        "/api/v1/ocr/extract",
+        "/api/v1/ocr/extractTokens",
         files={"file": ("sample.png", b"fake-image-bytes", "image/png")},
     )
 
