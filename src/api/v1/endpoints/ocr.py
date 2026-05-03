@@ -7,7 +7,6 @@ from src.schemas.ocr import OCRResponse, OCRToken
 from src.core.exceptions import (
     InvalidImageError,
     OCRProcessingError,
-    FileSizeError,
 )
 
 logger = logging.getLogger(__name__)
