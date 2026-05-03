@@ -37,19 +37,19 @@ Example response:
 
 ```json
 {
-  "filename": "sample.png",
-  "total_tokens": 3,
-  "tokens": [
-    {
-      "text": "Hello",
-      "confidence": 96.8,
-      "x": 42,
-      "y": 18,
-      "width": 88,
-      "height": 28
-    }
-  ],
-  "full_text": "Hello world"
+	"filename": "sample.png",
+	"total_tokens": 3,
+	"tokens": [
+		{
+			"text": "Hello",
+			"confidence": 96.8,
+			"x": 42,
+			"y": 18,
+			"width": 88,
+			"height": 28
+		}
+	],
+	"full_text": "Hello world"
 }
 ```
 
